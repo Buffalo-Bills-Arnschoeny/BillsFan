@@ -1,5 +1,5 @@
 ---
-name: 'Feature '
+name: 'Enabler Feature '
 about: Template use for documenting Features
 title: ''
 labels: ''
@@ -12,8 +12,6 @@ assignees: ''
 **Feature Owner (Feature Owner, Program Name, Product Owner, Business Owner):**
 
 **Requested By (Individual requesting the Feature):**
-
-**Feature Type (Functional or Enabler):**
 
 **Benefit Hypothesis (Measurable benefit to the business):**
 
