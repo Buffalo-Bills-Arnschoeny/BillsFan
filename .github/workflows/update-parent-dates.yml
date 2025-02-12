@@ -4,7 +4,7 @@ on:
   issues:
     types: [opened, edited, closed, reopened, milestoned, demilestoned]
   schedule:
-    - cron: "0 0 * * *"  # Runs daily
+    - cron: "0 0 * * *"  # Runs daily at midnight UTC
   workflow_dispatch:  # Allows manual runs
 
 jobs:
@@ -13,26 +13,33 @@ jobs:
     permissions:
       issues: write
     steps:
-- name: Get Parent Issue Number
-  run: |
-    PARENT=$(gh issue list --repo ${{ github.repository }} --search "is:open linked:${{ github.event.issue.number }}" --json number --jq ".[0].number")
-    echo "PARENT_ISSUE=$PARENT" >> $GITHUB_ENV
-  env:
-    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout Repository (Required for GitHub CLI)
+        uses: actions/checkout@v4
 
+      - name: Get Parent Issue Number
+        run: |
+          PARENT=$(gh issue list --repo ${{ github.repository }} --search "is:open linked:${{ github.event.issue.number }}" --json number --jq ".[0].number")
+          echo "PARENT_ISSUE=$PARENT" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get Iteration Dates from Child Issues
-        id: get_iteration_dates
         run: |
           if [ -z "$PARENT_ISSUE" ]; then
             echo "No parent issue found. Exiting."
             exit 0
           fi
 
-          DATES=$(gh issue list --search "is:open linked:$PARENT_ISSUE" --json number,fields --jq '[.[] | {iteration: .fields.iteration}]')
+          # Fetch all child issues linked to the parent issue
+          DATES=$(gh issue list --repo ${{ github.repository }} --search "is:open linked:$PARENT_ISSUE" --json number,fields --jq '[.[] | {iteration: .fields.iteration}]')
 
+          # Extract the earliest and latest iteration dates
           EARLIEST_ITERATION=$(echo $DATES | jq -r 'map(.iteration.startDate) | min')
           LATEST_ITERATION=$(echo $DATES | jq -r 'map(.iteration.endDate) | max')
+
+          # If no valid iterations found, set to empty
+          if [ "$EARLIEST_ITERATION" == "null" ]; then EARLIEST_ITERATION="Not Set"; fi
+          if [ "$LATEST_ITERATION" == "null" ]; then LATEST_ITERATION="Not Set"; fi
 
           echo "EARLIEST_ITERATION=$EARLIEST_ITERATION" >> $GITHUB_ENV
           echo "LATEST_ITERATION=$LATEST_ITERATION" >> $GITHUB_ENV
@@ -42,6 +49,6 @@ jobs:
       - name: Update Parent Issue with Aggregated Iteration Dates
         if: env.PARENT_ISSUE != ''
         run: |
-          gh issue edit $PARENT_ISSUE --body "**Start Iteration:** $EARLIEST_ITERATION\n**End Iteration:** $LATEST_ITERATION"
+          gh issue edit $PARENT_ISSUE --repo ${{ github.repository }} --body "**Start Iteration:** $EARLIEST_ITERATION\n**End Iteration:** $LATEST_ITERATION"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
