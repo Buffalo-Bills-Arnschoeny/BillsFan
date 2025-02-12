@@ -18,7 +18,17 @@ jobs:
 
       - name: Get Parent Issue Number
         run: |
+          echo "🔍 Fetching Parent Issue for Issue #${{ github.event.issue.number }}"
+
+          # Find the parent issue linked to this child issue
           PARENT=$(gh issue list --repo ${{ github.repository }} --search "is:open linked:${{ github.event.issue.number }}" --json number --jq ".[0].number")
+
+          if [ -z "$PARENT" ]; then
+            echo "⚠️ No parent issue found for issue #${{ github.event.issue.number }}. Skipping."
+            exit 0
+          fi
+
+          echo "✅ Found Parent Issue: $PARENT"
           echo "PARENT_ISSUE=$PARENT" >> $GITHUB_ENV
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -26,21 +36,27 @@ jobs:
       - name: Get Iteration Dates from Child Issues
         run: |
           if [ -z "$PARENT_ISSUE" ]; then
-            echo "No parent issue found. Exiting."
+            echo "❌ No parent issue found, skipping iteration check."
             exit 0
           fi
 
-          # Fetch all child issues linked to the parent issue
-          DATES=$(gh issue list --repo ${{ github.repository }} --search "is:open linked:$PARENT_ISSUE" --json number,fields --jq '[.[] | {iteration: .fields.iteration}]')
+          echo "🔍 Fetching iteration dates for child issues linked to Parent Issue #$PARENT_ISSUE"
+
+          # Fetch iteration data from all child issues
+          DATES=$(gh issue list --repo ${{ github.repository }} --search "is:open linked:$PARENT_ISSUE" --json number,fields --jq '[.[] | {number: .number, iteration: .fields.iteration}]')
+
+          echo "📊 Child Issue Iteration Data: $DATES"  # Debugging output
 
           # Extract the earliest and latest iteration dates
           EARLIEST_ITERATION=$(echo $DATES | jq -r 'map(.iteration.startDate) | min')
           LATEST_ITERATION=$(echo $DATES | jq -r 'map(.iteration.endDate) | max')
 
-          # If no valid iterations found, set to empty
-          if [ "$EARLIEST_ITERATION" == "null" ]; then EARLIEST_ITERATION="Not Set"; fi
-          if [ "$LATEST_ITERATION" == "null" ]; then LATEST_ITERATION="Not Set"; fi
+          # If no valid iterations found, set placeholders
+          if [ "$EARLIEST_ITERATION" == "null" ] || [ -z "$EARLIEST_ITERATION" ]; then EARLIEST_ITERATION="Not Set"; fi
+          if [ "$LATEST_ITERATION" == "null" ] || [ -z "$LATEST_ITERATION" ]; then LATEST_ITERATION="Not Set"; fi
 
+          echo "✅ Earliest Iteration: $EARLIEST_ITERATION"
+          echo "✅ Latest Iteration: $LATEST_ITERATION"
           echo "EARLIEST_ITERATION=$EARLIEST_ITERATION" >> $GITHUB_ENV
           echo "LATEST_ITERATION=$LATEST_ITERATION" >> $GITHUB_ENV
         env:
@@ -49,6 +65,10 @@ jobs:
       - name: Update Parent Issue with Aggregated Iteration Dates
         if: env.PARENT_ISSUE != ''
         run: |
+          echo "🔄 Updating Parent Issue #$PARENT_ISSUE with Iteration Dates"
+
           gh issue edit $PARENT_ISSUE --repo ${{ github.repository }} --body "**Start Iteration:** $EARLIEST_ITERATION\n**End Iteration:** $LATEST_ITERATION"
+
+          echo "✅ Parent Issue #$PARENT_ISSUE updated successfully!"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
