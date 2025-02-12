@@ -13,13 +13,13 @@ jobs:
     permissions:
       issues: write
     steps:
-      - name: Get Parent Issue Number
-        id: get_parent
-        run: |
-          PARENT=$(gh issue list --search "is:open linked:${{ github.event.issue.number }}" --json number --jq ".[0].number")
-          echo "PARENT_ISSUE=$PARENT" >> $GITHUB_ENV
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- name: Get Parent Issue Number
+  run: |
+    PARENT=$(gh issue list --repo ${{ github.repository }} --search "is:open linked:${{ github.event.issue.number }}" --json number --jq ".[0].number")
+    echo "PARENT_ISSUE=$PARENT" >> $GITHUB_ENV
+  env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Get Iteration Dates from Child Issues
         id: get_iteration_dates
