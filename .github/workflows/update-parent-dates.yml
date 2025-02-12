@@ -1,0 +1,51 @@
+name: Auto-Update Parent Issue Dates
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, milestoned, demilestoned]
+  schedule:
+    - cron: "0 0 * * *" # Runs daily to update dates
+
+jobs:
+  update-parent-dates:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Get Parent Issue Number
+        id: get_parent
+        run: |
+          PARENT=$(gh issue list --search "is:open linked:${{ github.event.issue.number }}" --json number --jq ".[0].number")
+          echo "PARENT_ISSUE=$PARENT" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get All Child Issue Dates
+        id: get_dates
+        run: |
+          if [ -z "$PARENT_ISSUE" ]; then
+            echo "No parent issue found. Exiting."
+            exit 0
+          fi
+
+          DATES=$(gh issue list --search "is:open linked:$PARENT_ISSUE" --json number,createdAt,closedAt --jq '[.[] | {start: .createdAt, end: .closedAt}]')
+          
+          EARLIEST_START=$(echo $DATES | jq -r 'map(.start) | min')
+          LATEST_END=$(echo $DATES | jq -r 'map(.end) | max')
+
+          if [ "$LATEST_END" == "null" ]; then
+            LATEST_END=$(date --iso-8601)
+          fi
+
+          echo "EARLIEST_START=$EARLIEST_START" >> $GITHUB_ENV
+          echo "LATEST_END=$LATEST_END" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Parent Issue Dates
+        if: env.PARENT_ISSUE != ''
+        run: |
+          gh issue edit $PARENT_ISSUE --add-label "Updated via automation"
+          gh issue edit $PARENT_ISSUE --body "**Start Date:** $EARLIEST_START\n**Target Date:** $LATEST_END"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
