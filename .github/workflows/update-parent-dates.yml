@@ -1,6 +1,7 @@
 name: Auto-Update Parent Issue Dates
 
 on:
+  workflow_dispatch:
   issues:
     types: [opened, edited, closed, reopened, milestoned, demilestoned]
   schedule:
