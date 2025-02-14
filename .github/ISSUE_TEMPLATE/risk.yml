@@ -1,6 +1,6 @@
 ---
 name: "Risk Report"
-about: "Log and track risks related to the project."
+description: "Log and track risks related to the project."
 title: "[Risk] Brief Description"
 labels: ["Risk"]
 assignees: []
@@ -74,4 +74,3 @@ body:
       label: "Contingency Plan"
       description: "What is the fallback plan if this risk occurs?"
       placeholder: "Define contingency actions to be taken if risk materializes."
----
