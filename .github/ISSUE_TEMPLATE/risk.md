@@ -1,16 +1,77 @@
 ---
-name: 'Risk:'
-about: Risks to the Project.
-title: ''
-labels: ''
-assignees: ''
-Category: ''
-Likelihood:''
-Impact:''
+name: "Risk Report"
+about: "Log and track risks related to the project."
+title: "[Risk] Brief Description"
+labels: ["Risk"]
+assignees: []
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: "Category"
+      options:
+        - Technical
+        - Business
+        - Security
+        - Compliance
+        - Other
 
+  - type: dropdown
+    id: likelihood
+    attributes:
+      label: "Likelihood"
+      options:
+        - Low
+        - Medium
+        - High
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: "Impact"
+      options:
+        - Low
+        - Medium
+        - High
+
+  - type: input
+    id: calculated_risk
+    attributes:
+      label: "Calculated Risk"
+      description: "Derived from Likelihood and Impact."
+      placeholder: "Auto-calculated based on matrix."
+
+  - type: dropdown
+    id: owner
+    attributes:
+      label: "Risk Owner"
+      description: "Who is responsible for managing this risk?"
+      multiple: false
+      options:
+        - Unassigned
+        - Team Lead
+        - Product Manager
+        - Security Officer
+        - Compliance Manager
+
+  - type: textarea
+    id: risk_description
+    attributes:
+      label: "Risk Description"
+      description: "Provide a brief description of the risk."
+      placeholder: "Explain the nature of the risk and its potential impact."
+
+  - type: textarea
+    id: mitigation_strategy
+    attributes:
+      label: "Mitigation Strategy"
+      description: "Describe actions to reduce or mitigate the risk."
+      placeholder: "Outline potential strategies to minimize the risk."
+
+  - type: textarea
+    id: contingency_plan
+    attributes:
+      label: "Contingency Plan"
+      description: "What is the fallback plan if this risk occurs?"
+      placeholder: "Define contingency actions to be taken if risk materializes."
 ---
-
-**Epic Name:**
-
-##Risk (brief description of the risk):##
-
