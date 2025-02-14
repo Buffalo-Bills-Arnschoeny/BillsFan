@@ -1,0 +1,83 @@
+name: Sync Issue Form Fields to GitHub Project
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  update-project-fields:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Issue Form Data & Update Project Fields
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const projectId = "YOUR_PROJECT_ID"; // Replace with your project ID
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue = context.payload.issue;
+            
+            // Define mapping between issue form fields and GitHub Project fields
+            const fieldMappings = {
+              "Category": "category",
+              "Likelihood": "likelihood",
+              "Impact": "impact",
+              "Calculated Risk": "calculated_risk",
+              "Risk Owner": "owner",
+              "Mitigation Strategy": "mitigation_strategy",
+              "Contingency Plan": "contingency_plan"
+            };
+
+            // Extract values from the issue body
+            const lines = issue.body.split("\n").map(line => line.trim());
+            const extractedData = {};
+
+            for (const line of lines) {
+              const [key, value] = line.split(":").map(l => l.trim());
+              if (fieldMappings[key]) {
+                extractedData[fieldMappings[key]] = value;
+              }
+            }
+
+            // Get issue project item
+            const projectItems = await github.graphql(`
+              query ($owner: String!, $repo: String!, $issueNumber: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  issue(number: $issueNumber) {
+                    id
+                  }
+                }
+              }
+            `, {
+              owner: owner,
+              repo: repo,
+              issueNumber: issue.number
+            });
+
+            const issueId = projectItems.repository.issue.id;
+
+            // Update custom fields in GitHub Project
+            for (const [fieldName, fieldValue] of Object.entries(extractedData)) {
+              await github.graphql(`
+                mutation ($projectId: ID!, $issueId: ID!, $fieldName: String!, $fieldValue: String!) {
+                  updateProjectV2ItemFieldValue(input: { 
+                    projectId: $projectId, 
+                    itemId: $issueId, 
+                    fieldName: $fieldName, 
+                    value: $fieldValue
+                  }) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `, {
+                projectId: projectId,
+                issueId: issueId,
+                fieldName: fieldName,
+                fieldValue: fieldValue
+              });
+            }
+
+            console.log(`Updated project fields for issue #${issue.number}`);
