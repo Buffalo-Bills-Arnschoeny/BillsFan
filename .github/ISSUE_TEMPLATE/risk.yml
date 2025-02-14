@@ -1,5 +1,5 @@
 ---
-name: "Risk Report"
+name: "Risk"
 description: "Log and track risks related to the project."
 title: "[Risk] Brief Description"
 labels: ["Risk"]
