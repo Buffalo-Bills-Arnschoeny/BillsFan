@@ -39,7 +39,7 @@ body:
     attributes:
       label: "Calculated Risk"
       description: "Derived from Likelihood and Impact."
-      placeholder: "Auto-calculated based on matrix."
+      placeholder: "Calculation of Calculated Risk in README."
 
   - type: dropdown
     id: owner
