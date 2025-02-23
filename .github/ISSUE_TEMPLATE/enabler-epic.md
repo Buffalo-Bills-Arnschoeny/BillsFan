@@ -1,5 +1,5 @@
 ---
-name: Epic Enabler
+name: Enabler Epic
 about: Describe this issue template's purpose here.
 title: ''
 labels: ''
